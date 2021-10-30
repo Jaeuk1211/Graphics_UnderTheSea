@@ -1,2 +1,28 @@
 # Graphics_UnderTheSea
-Graphics Term project
+
+#
+
+Gachon Univ. Dept. of SW (3-2 semester)
+
+Computer Graphics Term Project
+
+#
+
+[Project name : Under the sea]
+
+Our program shows the event of the sea when a user select some actions
+
+With the events, people can learn about environmental issue
+
+#
+
+[Team Member Info]
+
+201735820 Jaeuk Kim
+
+201735821 Jeonggyu Kim
+
+201735838 Juneseok Bang
+
+201835550 Sujeong Hwang
+
