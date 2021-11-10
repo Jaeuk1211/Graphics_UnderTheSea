@@ -1,0 +1,210 @@
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  font-family: 'Palanquin Dark', sans-serif;
+}
+
+article, aside, details, figcaption, figure,
+footer, header, hgroup, menu, nav, section {
+  display: block;
+}
+p{
+  margin-left: 39px;
+  color:white;
+}
+#add{
+  color:white;
+  font-style: bold;
+  font-size:20px;
+}
+
+ol, ul {
+  list-style: none;
+}
+
+blockquote, q {
+  quotes: none;
+}
+
+blockquote:before, blockquote:after,
+q:before, q:after {
+  content: '';
+  content: none;
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  margin-left:10px;
+  margin-top:5px;
+}
+
+#save{
+  border-radius: 15px;
+  background:white;
+  border-color:#179757;
+  border-style:solid;
+  color:#179757;
+  font-size:27px;
+  font-weight:700;
+  font-family: 'Palanquin Dark', sans-serif;
+  width:250px;
+  height:60px;
+  margin-bottom:10px;
+}
+
+#save:hover{
+  border-radius: 15px;
+  background:#2a9e5e;
+  border-color:#2a9e5e;
+  border-style:double;
+  color:white;
+  font-size:27px;
+  font-weight:700;
+  width:250px;
+  font-family: 'Palanquin Dark', sans-serif;
+  height:60px;
+}
+
+#ship{
+  border-radius: 15px;
+  background:white;
+  border-color:#ff0000;
+  border-style:solid;
+  color:ff0000;
+  font-size:27px;
+  font-weight:700;
+  font-family: 'Palanquin Dark', sans-serif;
+  width:250px;
+  height:60px;
+  margin-bottom:10px;
+}
+
+#ship:hover{
+  border-radius: 15px;
+  background:#ff0000;
+  border-color:#ff0000;
+  border-style:double;
+  color:white;
+  font-size:27px;
+  font-weight:700;
+  width:250px;
+  font-family: 'Palanquin Dark', sans-serif;
+  height:60px;
+}
+
+#rain{
+  border-radius: 15px;
+  background:white;
+  border-style:solid;
+  border-color:#ff0000;
+  font-size:27px;
+  font-weight:700;
+  font-family: 'Palanquin Dark', sans-serif;
+  color:#ff0000;
+  width:250px;
+  height:60px;
+}
+
+#rain:hover{
+  border-radius: 15px;
+  background:#ff0000;
+  border-color:#ff0000;
+  border-style:double;
+  font-size:27px;
+  font-weight:700;
+  font-family: 'Palanquin Dark', sans-serif;
+  color:white;
+  width:250px;
+  height:60px;
+}
+
+/*
+ * Copyright (c) 2012-2013 Thibaut Courouble
+ * http://www.cssflow.com
+ *
+ * Licensed under the MIT License:
+ * http://www.opensource.org/licenses/mit-license.php
+ */
+body {
+  font: 13px/20px 'Lucida Grande', Tahoma, Verdana, sans-serif;
+  color: #404040;
+  background:rgb(255, 255, 255);
+}
+
+
+.btn{
+  width: 135;
+  height:135;
+  background-color:white;
+  outline:0;
+  border:0;
+  font-family: 'Palanquin Dark', sans-serif;
+}
+
+.btn image{
+  align-content: center;
+}
+
+.btn:hover{
+  background-color:#ee5112;
+}
+
+.main {
+  width: 289.9px;
+  height:450px;
+  margin-bottom:30px;
+  background: white;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+section {
+  display: none;
+  border-top: 1px solid #ddd;}
+
+/*라디오버튼 숨김*/
+input {
+    display: none;}
+
+label {
+  display: inline-block;
+  margin: 0 0 -1px;
+  padding: 5px 15px;
+  font-style:bold;
+  text-align: center;
+  color: #bbb;
+  border: 1px solid transparent;}
+
+label:hover {
+  color: #ee5112;
+  cursor: pointer;}
+
+/*input 클릭시, label 스타일*/
+input:checked + label {
+    color: #555;
+    border: 1px solid #ddd;
+    border-top: 2px solid #ee5112;
+    border-bottom: 1px solid #ffffff;}
+
+#tab1:checked ~ #content1,
+#tab2:checked ~ #content2,
+#tab3:checked ~ #content3,
+#tab4:checked ~ #content4 {
+  display: block;}
+
