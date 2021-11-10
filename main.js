@@ -681,9 +681,7 @@
     }
 
 
-// 처음에 뭐가 떠있을지 
-// 이걸 어레이 형태로 전환
-// loadObj 파일 수정했음
+// first object
 function initObjs(i){
 
     //objRaw = loadObj("objs/suzanne.obj");
@@ -756,9 +754,9 @@ function handleMouseDown(event) {
     else {
         mouseLeftDown = true;
         mouseRightDown = false;
-        startInteraction(event.clientX, event.clientY); // 내가 클릭한 좌표
+        startInteraction(event.clientX, event.clientY); 
     }
-    lastMouseX = event.clientX; // 내가 물체를 놓은 좌표
+    lastMouseX = event.clientX;
     lastMouseY = event.clientY;
 }
 
@@ -1909,24 +1907,23 @@ function tick() {
 
 }
 
-// 몇번쨰 fish인지를 보내는 함수
+// setting object
 function setObject(i){
     var objectCenter = [0.0, 1.0, 0.0];
-
-    // 타이타닉 시작 위치
+    // init object location
     if (i == 0) {
         objectCenter = [0.0, -0.051, 0.0];
     }
    
-    // 빙하1
+    // init object location
     if(i == 1){
         objectCenter = [0.1, -0.26, 0.7];
     }
-    // 빙하2
+    // init object location
     if(i == 2){
         objectCenter = [-0.4, 0.0, -0.7];
     }
-    // 첫번쨰 물고기 시작 위치
+    // init object location
     if (i == 3) {
         objectCenter = [-0.50, - 0.70, 0.50];
     }
@@ -2046,6 +2043,34 @@ function saveObject(i){
         
 }
 
+function axid(){
+
+    if(parameters.Rain == true){            
+        parameters.Rain = false;
+
+        rainaudio.pause();
+
+        initTexture(objTexture[0], "objs/object016.jpg");
+        initTexture(objTexture[1], "objs/object020.jpg");
+        initTexture(objTexture[2], "objs/object021.jpg");
+
+    }
+}
+
+function leak(){
+
+    if(idx%2 == 0){
+        initTexture(pool.Texture, "tile/cube2.jpg");
+        for(var i = 3; i < fishCount; i++){
+            initTexture(objTexture[i], "objs/object0" + fishes[i] + ".jpg");
+        }   
+        
+        idx++;
+        leakaudio.pause();
+
+    }
+
+}
 function webGLStart() {
     document.getElementById("rain").onclick = function () {
         if(parameters.Rain == true){            
@@ -2095,7 +2120,7 @@ function webGLStart() {
 
     document.getElementById("save").onclick = function () {
         var q = fishCount;
-        fishes[q] = 23; //해초
+        fishes[q] = 23; 
         size[q] = 0.006;
         fishes[q+1] = 7;
         size[q+1] = 0.800;
@@ -2113,6 +2138,9 @@ function webGLStart() {
             fishCount++;
             check();
         }
+
+        axid();
+        leak();
     };
     // 맨 처음에 그냥 있으니까 그게 fishcount가 0이라고 치는 듯.
     // 그래서 새로 추가하는거는 1
