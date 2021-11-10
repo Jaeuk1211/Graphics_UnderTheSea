@@ -3,7 +3,7 @@
     var gl;
     var tracer = {};
 
-    var idx = 0;
+    var idx = 1;
 
     //necessary extensions
     var OES_texture_float;
