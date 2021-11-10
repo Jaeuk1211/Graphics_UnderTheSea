@@ -1,15 +1,4 @@
 <html>
-  <style type="text/css">
-    #title{
-      text-align: center;
-      width:500px;
-      font-size: 40px;
-      font-weight: bold;
-      font-family: 'Palanquin Dark', sans-serif;
-      color:black;
-      
-    }
-    </style>
 
 <head>
 <title>WebGL Fluid</title>
@@ -18,6 +7,7 @@
 
 <script type="text/javascript" src="glMatrix-0.9.5.js"></script>
 <script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="o3djs/base.js"></script>
 <script type="text/javascript" src ="tracer.js"></script>
 <script type="text/javascript" src ="primitives.js"></script>
 <script type="text/javascript" src ="loadObj.js"></script>
@@ -25,168 +15,190 @@
 <script type="text/javascript" src="threejs/OBJLoader.js"></script>
 <script type="text/javascript" src="dat.gui.min.js"></script>
 <script type="text/javascript" src="main.js"></script>
-<link rel="stylesheet" href="css/style.css">
-<link href="https://fonts.googleapis.com/css?family=Palanquin+Dark&display=swap" rel="stylesheet">
+
 
 
 <script id="pool-vs" type="x-shader/x-vertex">
-  attribute vec3 aVertexPosition;
-  attribute vec2 aTextureCoord;
-  attribute vec3 aVertexNormal;
-
-  uniform mat4 uMVMatrix;
-  uniform mat4 uPMatrix;
-  uniform mat4 uNmlMatrix;
-  uniform mat4 uLightMatrix;
-  uniform mat4 uLightProj;
-
-  varying vec2 vTextureCoord;
-  varying vec3 vVertexPosition;
-  varying vec3 vVertexNormal;
-  varying vec3 vDepthPosition;
-  const mat4 ScaleMatrix = mat4(0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.5, 0.5, 0.5, 1.0);
-  void main(void) {
-     vVertexPosition = aVertexPosition;
-     vVertexPosition.y -= 0.3;
-      gl_Position = uPMatrix * uMVMatrix * vec4(vVertexPosition, 1.0);
-     // vVertexPosition = (uMVMatrix*vec4(aVertexPosition,1.0)).xyz;
-     
-      //vTextureCoord = aTextureCoord;
-      vVertexNormal = aVertexNormal;
-    // vVertexNormal = (uNmlMatrix * vec4(aVertexNormal,0.0)).xyz;  
-     vDepthPosition = (ScaleMatrix * uLightProj * uLightMatrix * vec4(vVertexPosition, 1.0)).xyz;
-  }
+    attribute vec3 aVertexPosition;
+    attribute vec2 aTextureCoord;
+    attribute vec3 aVertexNormal;
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+    uniform mat4 uNmlMatrix;
+    uniform mat4 uLightMatrix;
+    uniform mat4 uLightProj;
+    varying vec2 vTextureCoord;
+    varying vec3 vVertexPosition;
+    varying vec3 vVertexNormal;
+    varying vec3 vDepthPosition;
+    const mat4 ScaleMatrix = mat4(0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.5, 0.5, 0.5, 1.0);
+    void main(void) {
+       vVertexPosition = aVertexPosition;
+       vVertexPosition.y -= 0.3;
+        gl_Position = uPMatrix * uMVMatrix * vec4(vVertexPosition, 1.0);
+       // vVertexPosition = (uMVMatrix*vec4(aVertexPosition,1.0)).xyz;
+       
+        vTextureCoord = aTextureCoord;
+        vVertexNormal = aVertexNormal;
+      // vVertexNormal = (uNmlMatrix * vec4(aVertexNormal,0.0)).xyz;  
+       vDepthPosition = (ScaleMatrix * uLightProj * uLightMatrix * vec4(vVertexPosition, 1.0)).xyz;
+    }
 </script>
 
 <script id="pool-fs" type="x-shader/x-fragment">
-  precision mediump float;
-
-  varying vec2 vTextureCoord;
-  varying vec3 vVertexPosition;
-  varying vec3 vVertexNormal;
-  varying vec3 vDepthPosition;
-
-  uniform sampler2D uSamplerTile;
-  uniform sampler2D uSamplerCaustic;
-  uniform sampler2D uSamplerWater; 
-  uniform sampler2D uSamplerDepth;
-  uniform sampler2D uSamplerGodray;
-
- uniform vec3 uSphereCenter;
- uniform float uSphereRadius;
- uniform float uCausticOn;
- uniform int uIsSphere;
-  float waterHeight = 0.0;
-  vec3 lightPos = vec3(0.0,2.0,-2.0);
-  vec3 lightDir = normalize(vec3(0.5,1.2,0.3));
- // vec3 lightDir = vec3(0.5,1.2,0.3);
-  vec3 underwaterColor = vec3(0.4, 0.9, 1.0);
-  float lightIntensity = 1.4;
-  float poolHeight = 0.65;
-  const float IOR_AIR = 1.0;
-  const float IOR_WATER = 1.333;
+    precision mediump float;
+    varying vec2 vTextureCoord;
+    varying vec3 vVertexPosition;
+    varying vec3 vVertexNormal;
+    varying vec3 vDepthPosition;
+    uniform sampler2D uSamplerTile;
+    uniform sampler2D uSamplerCaustic;
+    uniform sampler2D uSamplerWater; 
+    uniform sampler2D uSamplerDepth;
+    uniform sampler2D uSamplerGodray;
   
-  vec2 intersectCube(vec3 origin, vec3 ray, vec3 cubeMin, vec3 cubeMax) {
-      vec3 tMin = (cubeMin - origin) / ray;
-      vec3 tMax = (cubeMax - origin) / ray;
-      vec3 t1 = min(tMin, tMax);
-      vec3 t2 = max(tMin, tMax);
-      float tNear = max(max(t1.x, t1.y), t1.z);
-      float tFar = min(min(t2.x, t2.y), t2.z);
-      return vec2(tNear, tFar);
-  }
-  vec3 getWallColor(vec3 point) {
-      float scale = 0.5;
-      vec3 wallColor = vec3(1.0, 0.0, 0.0);
-      vec3 normal;
-      if (abs(point.x) > 0.999) {  //left,right wall
-        wallColor = texture2D(uSamplerTile, point.yz * 0.5 + vec2(1.0, 0.5)).rgb;
-        normal = vec3(-point.x, 0.0, 0.0);
-      }
-      else if (abs(point.z) > 0.999) {   //front,back wall
-        wallColor = texture2D(uSamplerTile, point.yx * 0.5 + vec2(1.0, 0.5)).rgb;
-        normal = vec3(0.0, 0.0, -point.z);
-      } 
-      else {   //bottm wall
-        wallColor = texture2D(uSamplerTile, point.xz * 0.5 + 0.5).rgb;
-        normal = vec3(0.0, 1.0, 0.0);
-      }
-      
-      scale /= length(point); 
-      scale *= 1.0 - 0.9 / pow(length(point - uSphereCenter) / uSphereRadius, 4.0); 
-      vec3 refractedLight = -refract(-lightDir, vec3(0.0, 1.0, 0.0), IOR_AIR / IOR_WATER);
-      float diffuse = max(0.0, dot(refractedLight, normal));
-      vec4 data = texture2D(uSamplerWater, point.xz * 0.5 + 0.5);
-      if (point.y < data.r ) {
-         vec4 caustic = texture2D(uSamplerCaustic, 0.65 * (point.xz - point.y * refractedLight.xz / refractedLight.y) * 0.5 + 0.5);
-         if(uCausticOn > 0.0)
-              scale += diffuse * caustic.r * 2.0 * caustic.g;
-      } else {
-        vec2 t = intersectCube(point, refractedLight, vec3(-1.0, -poolHeight, -1.0), vec3(1.0, 2.0, 1.0));
-        diffuse *= 1.0 / (1.0 + exp(-200.0 / (1.0 + 10.0 * (t.y - t.x)) * (point.y + refractedLight.y * t.y - 1.0 / 2.0)));
-        scale += diffuse * 0.7;
-      }
-      
-      return wallColor * scale ;
-}
-float linearizeDepth( float exp_depth, float near, float far ){
-    return ( 2.0 * near ) / ( far + near - exp_depth * ( far - near ) );
-}
-float getObjShadow(vec3 position, vec3 normal){
-      float texelSize = 1.0 / 512.0;
-      vec3 c = vec3(0.0);
-      float depth = 0.0;
-      vec2 coord = position.xy;
-      if(normal.z > 0.999){   //front wall
-          coord.y = 1.0- coord.y;
-      }else if(normal.x > 0.999){  //right wall
-          coord.y = 1.0- coord.y;
-      }
-      
-      int count = 0;
-      for (int y = -1; y <= 1; ++y){
-        for (int x = -1; x <= 1; ++x){
-            vec2 offset = coord + vec2(float(x) * texelSize, float(y) * texelSize);
-
-            depth = texture2D(uSamplerDepth, offset).r;
-            depth = linearizeDepth(depth, 1.0, 20.0);
+   uniform vec3 uSphereCenter;
+   uniform float uSphereRadius;
+   uniform float uCausticOn;
+   uniform int uIsSphere;
+    float waterHeight = 0.0;
+    vec3 lightPos = vec3(0.0,2.0,-2.0);
+    vec3 lightDir = normalize(vec3(0.5,1.2,0.3));
+   // vec3 lightDir = vec3(0.5,1.2,0.3);
+    vec3 underwaterColor = vec3(0.4, 0.9, 1.0);
+    float lightIntensity = 1.4;
+    float poolHeight = 0.65;
+    const float IOR_AIR = 1.0;
+    const float IOR_WATER = 1.333;
     
-            if ( position.z > depth ){   //part of shadow
-              c += vec3(0.1, 0.1, 0.1);
-             //color = vec3(1.0, 0.0, 0.0);
-            }
-            ++count;
-          }
-      }
-      // if ( count > 0 )
-      //   c *= float(count) *0.1;
-      float shadow = (1.0 - length(c));
-      shadow = clamp(1.0 / (1.0 + exp(-shadow)), 0.0, 1.0);
-      return shadow *1.4;
-}
-  void main(void) {
-      vec3 lightDir = normalize(vVertexPosition-lightPos);
-      //float diffuseTerm = clamp(dot(normalize(lightDir), normalize(vVertexNormal) ), 0.0, 1.0);
-      vec3 color = getWallColor(vVertexPosition);
-      vec4 data = texture2D(uSamplerWater, vVertexPosition.xz * 0.5 + 0.5);
-      waterHeight = data.r;
-      if(vVertexPosition.y < waterHeight){
-          color *= underwaterColor;
-      }
-      //vec2 tCube = intersectCube(lightPos, lightDir, vec3(-1.0, -poolHeight, -1.0), vec3(1.0, poolHeight, 1.0));
-      //vec3 hitCube = lightPos - lightDir * tCube.y;
-      //if(hitCube.y<0.99)
-          //scolor *= vec3(0.5,0.5,0.5);
-          
-    // float dep = texture2D(uSamplerDepth, vVertexPosition.xz * 0.5 + 0.5).r;
-    // dep = linearizeDepth( dep, 1.0, 10.0);
-    //  color += vec3(1.0-dep,1.0-dep,1.0-dep);
-    if(uIsSphere == 0){
-      color *= getObjShadow(vDepthPosition, vVertexNormal);
+    vec2 intersectCube(vec3 origin, vec3 ray, vec3 cubeMin, vec3 cubeMax) {
+        vec3 tMin = (cubeMin - origin) / ray;
+        vec3 tMax = (cubeMax - origin) / ray;
+        vec3 t1 = min(tMin, tMax);
+        vec3 t2 = max(tMin, tMax);
+        float tNear = max(max(t1.x, t1.y), t1.z);
+        float tFar = min(min(t2.x, t2.y), t2.z);
+        return vec2(tNear, tFar);
     }
-
-     gl_FragColor = vec4(color, 0.8);
+    vec3 getWallColor(vec3 point) {
+        float scale = 0.5;
+        vec3 wallColor = vec3(1.0, 0.0, 0.0);
+        vec3 normal;
+        if (abs(point.x) > 0.999) {  //left,right wall
+          wallColor = texture2D(uSamplerTile, point.yz * 0.5 + vec2(1.0, 0.5)).rgb;
+          normal = vec3(-point.x, 0.0, 0.0);
+        }
+        else if (abs(point.z) > 0.999) {   //front,back wall
+          wallColor = texture2D(uSamplerTile, point.yx * 0.5 + vec2(1.0, 0.5)).rgb;
+          normal = vec3(0.0, 0.0, -point.z);
+        } 
+        else {   //bottm wall
+          wallColor = texture2D(uSamplerTile, point.xz * 0.5 + 0.5).rgb;
+          normal = vec3(0.0, 1.0, 0.0);
+        }
+        
+        scale /= length(point); 
+        scale *= 1.0 - 0.9 / pow(length(point - uSphereCenter) / uSphereRadius, 4.0); 
+        vec3 refractedLight = -refract(-lightDir, vec3(0.0, 1.0, 0.0), IOR_AIR / IOR_WATER);
+        float diffuse = max(0.0, dot(refractedLight, normal));
+        vec4 data = texture2D(uSamplerWater, point.xz * 0.5 + 0.5);
+        if (point.y < data.r ) {
+           vec4 caustic = texture2D(uSamplerCaustic, 0.65 * (point.xz - point.y * refractedLight.xz / refractedLight.y) * 0.5 + 0.5);
+           if(uCausticOn > 0.0)
+                scale += diffuse * caustic.r * 2.0 * caustic.g;
+        } else {
+          vec2 t = intersectCube(point, refractedLight, vec3(-1.0, -poolHeight, -1.0), vec3(1.0, 2.0, 1.0));
+          diffuse *= 1.0 / (1.0 + exp(-200.0 / (1.0 + 10.0 * (t.y - t.x)) * (point.y + refractedLight.y * t.y - 1.0 / 2.0)));
+          scale += diffuse * 0.7;
+        }
+        
+        return wallColor * scale ;
   }
+  float linearizeDepth( float exp_depth, float near, float far ){
+      return ( 2.0 * near ) / ( far + near - exp_depth * ( far - near ) );
+  }
+  float getObjShadow(vec3 position, vec3 normal){
+        float texelSize = 1.0 / 512.0;
+        vec3 c = vec3(0.0);
+        float depth = 0.0;
+        vec2 coord = position.xy;
+        if(normal.z > 0.999){   //front wall
+            coord.y = 1.0- coord.y;
+        }else if(normal.x > 0.999){  //right wall
+            coord.y = 1.0- coord.y;
+        }
+        
+        int count = 0;
+        for (int y = -1; y <= 1; ++y){
+          for (int x = -1; x <= 1; ++x){
+              vec2 offset = coord + vec2(float(x) * texelSize, float(y) * texelSize);
+  
+              depth = texture2D(uSamplerDepth, offset).r;
+              depth = linearizeDepth(depth, 1.0, 20.0);
+      
+              if ( position.z > depth ){   //part of shadow
+                c += vec3(0.1, 0.1, 0.1);
+               //color = vec3(1.0, 0.0, 0.0);
+              }
+              ++count;
+            }
+        }
+        // if ( count > 0 )
+        //   c *= float(count) *0.1;
+        float shadow = (1.0 - length(c));
+        shadow = clamp(1.0 / (1.0 + exp(-shadow)), 0.0, 1.0);
+        return shadow *1.4;
+  }
+    void main(void) {
+        vec3 lightDir = normalize(vVertexPosition-lightPos);
+        //float diffuseTerm = clamp(dot(normalize(lightDir), normalize(vVertexNormal) ), 0.0, 1.0);
+        vec3 color = getWallColor(vVertexPosition);
+        vec4 data = texture2D(uSamplerWater, vVertexPosition.xz * 0.5 + 0.5);
+        waterHeight = data.r;
+        if(vVertexPosition.y < waterHeight){
+            color *= underwaterColor;
+        }
+        //vec2 tCube = intersectCube(lightPos, lightDir, vec3(-1.0, -poolHeight, -1.0), vec3(1.0, poolHeight, 1.0));
+        //vec3 hitCube = lightPos - lightDir * tCube.y;
+        //if(hitCube.y<0.99)
+            //scolor *= vec3(0.5,0.5,0.5);
+            
+      // float dep = texture2D(uSamplerDepth, vVertexPosition.xz * 0.5 + 0.5).r;
+      // dep = linearizeDepth( dep, 1.0, 10.0);
+      //  color += vec3(1.0-dep,1.0-dep,1.0-dep);
+      if(uIsSphere == 0){
+        color *= getObjShadow(vDepthPosition, vVertexNormal);
+      }
+        // if(vVertexNormal.y<-0.999 && uIsSphere == 0){
+        //   vec3 position = vDepthPosition;
+        //   float texelSize = 1.0 / 512.0;
+        //   vec3 c = vec3(0.0);
+        //   float depth = 0.0;
+        //   int count = 0;
+        //   for (int y = -1; y <= 1; ++y){
+        //     for (int x = -1; x <= 1; ++x){
+        //       vec2 offset = position.xy + vec2(float(x) * texelSize, float(y) * texelSize);
+    
+        //         depth = texture2D(uSamplerDepth, offset).r;
+        //         depth = linearizeDepth(depth, 1.0, 20.0);
+        
+        //         if ( position.z > depth ){   //part of shadow
+        //           c += vec3(0.1, 0.1, 0.1);
+        //          //color = vec3(1.0, 0.0, 0.0);
+        //         }
+        //         ++count;
+        //       }
+        //   }
+        //   // if ( count > 0 )
+        //   //   c *= float(count) *0.1;
+        //   float shadow = (1.0 - length(c));
+        //   shadow = clamp(1.0 / (1.0 + exp(-shadow)), 0.0, 1.0);
+        //   color *= shadow *1.4;
+          
+        // }
+        //color += 0.25* vec3(texture2D(uSamplerGodray, vVertexPosition.xz * 0.5 + 0.5).r);
+       gl_FragColor = vec4(color, 1.0);
+    }
 </script>
 
 <script id="godray-vs" type="x-shader/x-vertex">
@@ -239,7 +251,7 @@ float getObjShadow(vec3 position, vec3 normal){
 		//if ( 1.0 <= iters && uv.y < 1.0 ) 
         col += damp*linearizeDepth(texture2D( uSamplerInput, uv ).r, 1.0, 10.0);
 		uv += stepv;
-        
+        damp -= 0.1;
 		//if ( 2.0 <= iters && uv.y < 1.0 ) 
         col += damp*linearizeDepth(texture2D( uSamplerInput, uv ).r, 1.0, 10.0);
 		uv += stepv;
@@ -288,94 +300,84 @@ float getObjShadow(vec3 position, vec3 normal){
 </script>
 
 <script id="obj-vs" type="x-shader/x-vertex">
-  attribute vec3 aVertexPosition;
-  attribute vec3 aVertexNormal;
-  attribute vec3 aTextureCoord;
-  
-  uniform mat4 uMVMatrix;
-  uniform mat4 uPMatrix;
-  uniform vec3 uCenter;
- // uniform vec3 uRadius;
-  varying vec3 vTextureCoord;
-varying vec3 initialPosition;
-  varying vec3 vVertexPosition;
-  varying vec3 vVertexNormal;
-  void main(void) {
-      vVertexPosition = uCenter + aVertexPosition;
-    initialPosition = vec3(0,1,0) + aVertexPosition;
-      // vVertexPosition = aVertexPosition;
-      gl_Position = uPMatrix * uMVMatrix * vec4(vVertexPosition, 1.0);
-      vTextureCoord = aTextureCoord;
-     
-      vVertexNormal = aVertexNormal;
-  }
+    attribute vec3 aVertexPosition;
+    attribute vec3 aVertexNormal;
+   // attribute vec2 aTextureCoord;
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+    uniform vec3 uCenter;
+   // uniform vec3 uRadius;
+   // varying vec2 vTextureCoord;
+    varying vec3 vVertexPosition;
+    varying vec3 vVertexNormal;
+    void main(void) {
+        vVertexPosition = uCenter + aVertexPosition;
+        // vVertexPosition = aVertexPosition;
+        gl_Position = uPMatrix * uMVMatrix * vec4(vVertexPosition, 1.0);
+       // vTextureCoord = aTextureCoord;
+       
+        vVertexNormal = aVertexNormal;
+    }
 </script>
 
 <script id="obj-fs" type="x-shader/x-fragment">
-  precision highp float;
-  //uniform sampler2D uSamplerSphere;
-  varying vec3 vTextureCoord;
- // uniform vec3 uDiffuseColor;
- uniform float uSphereRadius;
-  uniform vec3 uSphereCenter;
-  uniform int uIsSphere;
-  uniform sampler2D uSamplerWater;
- uniform sampler2D uSamplerTexture; 
-  uniform sampler2D uSamplerCaustic;
-  uniform float uCausticOn;
-  varying vec3 vVertexPosition;
-  varying vec3 vVertexNormal;
- varying vec3 initialPosition; 
-  vec3 lightDir = normalize(vec3(0.5,1.2,0.3));
-  const float IOR_AIR = 1.0;
-  const float IOR_WATER = 1.333;
-  vec3 underwaterColor = vec3(0.8, 0.9, 1.0);
-
-  vec3 getOBJColor(vec3 initialPosition) {
-      vec3 TextureColor = texture2D(uSamplerTexture, initialPosition.yz*1.95 + 0.5).rgb;
-      return TextureColor;
-}
-  
-  vec3 getSphereColor(vec3 point,  vec3 sphereCenter, float sphereRadius) {
-    vec3 color = vec3(0.5);
-    color *= 1.0 - 0.9 / pow((1.0 + sphereRadius - abs(point.x)) / sphereRadius, 3.0);
-    color *= 1.0 - 0.9 / pow((1.0 + sphereRadius - abs(point.z)) / sphereRadius, 3.0);
-    color *= 1.0 - 0.9 / pow((point.y + 1.0 + sphereRadius) / sphereRadius, 3.0);
-    vec3 sphereNormal = (point - sphereCenter) / sphereRadius;
-    vec3 refractedLight = refract(-lightDir, vec3(0.0, 1.0, 0.0), IOR_AIR / IOR_WATER);
-    float diffuse = max(0.0, dot(-refractedLight, sphereNormal)) * 0.5;
-    vec4 data = texture2D(uSamplerWater, point.xz * 0.5 + 0.5);
-    if (point.y < data.r) {
-      vec4 caustic = texture2D(uSamplerCaustic, 0.75 * (point.xz - point.y * refractedLight.xz / refractedLight.y) * 0.5 + 0.5);
-      if(uCausticOn > 0.0)
-      diffuse *= caustic.r * 4.0;
-    }
-    color += diffuse;
-    return color;
-}
-  void main(void) {
-      vec3 color;
-      vec4 data = texture2D(uSamplerWater, vVertexPosition.xz * 0.5 + 0.5);
-      if(uIsSphere == 1){
-        color = getSphereColor(vVertexPosition, uSphereCenter, uSphereRadius);
-     }
-     else{
-        color = getOBJColor(initialPosition);
-        color *= clamp(dot(lightDir, vVertexNormal), 0.60,1.0);
-        if(vVertexPosition.y < data.r){
-          vec3 refractedLight = refract(-lightDir, vec3(0.0, 0.1, 0.0), IOR_AIR / IOR_WATER);
-          vec4 caustic = texture2D(uSamplerCaustic, 0.75 * (vVertexPosition.xz - vVertexPosition.y * refractedLight.xz / refractedLight.y) * 0.5 + 0.5);
-          if(caustic.r < 0.2){
-            if(uCausticOn > 0.0)
-              color *= caustic.r * 4.0;
-          }
-        }
-     }
-    if(vVertexPosition.y < data.r){
-        color *= underwaterColor;
+    precision highp float;
+    //uniform sampler2D uSamplerSphere;
+    //varying vec2 vTextureCoord;
+   // uniform vec3 uDiffuseColor;
+   uniform float uSphereRadius;
+    uniform vec3 uSphereCenter;
+    uniform int uIsSphere;
+    uniform sampler2D uSamplerWater; 
+    uniform sampler2D uSamplerCaustic;
+    uniform float uCausticOn;
+    varying vec3 vVertexPosition;
+    varying vec3 vVertexNormal;
+    vec3 lightDir = normalize(vec3(0.5,1.2,0.3));
+    const float IOR_AIR = 1.0;
+    const float IOR_WATER = 1.333;
+    vec3 underwaterColor = vec3(0.4, 0.9, 1.0);
+    
+    vec3 getSphereColor(vec3 point,  vec3 sphereCenter, float sphereRadius) {
+      vec3 color = vec3(0.5);
+      color *= 1.0 - 0.9 / pow((1.0 + sphereRadius - abs(point.x)) / sphereRadius, 3.0);
+      color *= 1.0 - 0.9 / pow((1.0 + sphereRadius - abs(point.z)) / sphereRadius, 3.0);
+      color *= 1.0 - 0.9 / pow((point.y + 1.0 + sphereRadius) / sphereRadius, 3.0);
+      vec3 sphereNormal = (point - sphereCenter) / sphereRadius;
+      vec3 refractedLight = refract(-lightDir, vec3(0.0, 1.0, 0.0), IOR_AIR / IOR_WATER);
+      float diffuse = max(0.0, dot(-refractedLight, sphereNormal)) * 0.5;
+      vec4 data = texture2D(uSamplerWater, point.xz * 0.5 + 0.5);
+      if (point.y < data.r) {
+        vec4 caustic = texture2D(uSamplerCaustic, 0.75 * (point.xz - point.y * refractedLight.xz / refractedLight.y) * 0.5 + 0.5);
+        if(uCausticOn > 0.0)
+        diffuse *= caustic.r * 4.0;
       }
-      gl_FragColor = vec4(color,1.0);
+      color += diffuse;
+      return color;
   }
+    void main(void) {
+        vec3 color;
+        vec4 data = texture2D(uSamplerWater, vVertexPosition.xz * 0.5 + 0.5);
+        if(uIsSphere == 1){
+          color = getSphereColor(vVertexPosition, uSphereCenter, uSphereRadius);
+       }
+       else{
+          color = vec3(1.0, 1.0, 0.0);
+          color *= clamp(dot(lightDir, vVertexNormal), 0.20,1.0);
+          if(vVertexPosition.y < data.r){
+            vec3 refractedLight = refract(-lightDir, vec3(0.0, 1.0, 0.0), IOR_AIR / IOR_WATER);
+            vec4 caustic = texture2D(uSamplerCaustic, 0.75 * (vVertexPosition.xz - vVertexPosition.y * refractedLight.xz / refractedLight.y) * 0.5 + 0.5);
+            if(caustic.r> 0.2){
+              if(uCausticOn > 0.0)
+                color *= caustic.r * 4.0;
+            }
+          }
+       }
+      if(vVertexPosition.y < data.r){
+          color *= underwaterColor;
+        }
+        gl_FragColor = vec4(color,1.0);
+    }
 </script>
 
 <script id="water-vs" type="x-shader/x-vertex">
@@ -390,7 +392,7 @@ varying vec3 initialPosition;
     uniform sampler2D uSamplerWater;  //height texture: [position.y, normal.x, normal.z, velocity.y]
     varying vec3 vVertexPosition;
     varying vec3 vReflectPosition;
-    const mat4 ScaleMatrix = mat4(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.5, 0.5, 0.5, 1.0);
+    const mat4 ScaleMatrix = mat4(0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.5, 0.5, 0.5, 1.0);
     //varying vec3 vVertexNormal;
     void main(void) {
         vec4 data = texture2D(uSamplerWater, aVertexPosition.xy * 0.5 + 0.5);
@@ -398,6 +400,7 @@ varying vec3 initialPosition;
        // gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);//screen coord
         //vVertexNormal = (uNmlMatrix * vec4(aVertexNormal, 0.0)).xyz;
         vVertexPosition = aVertexPosition.xzy;//gl_Position.xyz;
+        vVertexPosition.y += data.x;   //retrieve height
         vVertexPosition.y += data.r;   //retrieve height
         gl_Position = uPMatrix * uMVMatrix * vec4(vVertexPosition, 1.0);
         vReflectPosition = (ScaleMatrix * uReflectpMatrix* uReflectmvMatrix * vec4(vVertexPosition, 1.0)).xyz;
@@ -417,7 +420,6 @@ varying vec3 initialPosition;
     uniform float uSphereRadius;
     uniform vec3 uSphereCenter;
     uniform float uCausticOn;
-    uniform int uDrawObjReflect;
     varying vec3 vVertexPosition;
      varying vec3 vReflectPosition;
    // varying vec3 vVertexNormal;
@@ -526,12 +528,8 @@ varying vec3 initialPosition;
     vec3 getRayColor(vec3 origin, vec3 ray, vec3 waterColor) {
         vec3 color;
         float q = intersectSphere(origin, ray, uSphereCenter, uSphereRadius);
-        if (q < 1.0e6 ) {
-          if(uIsSphere == 1){
+        if (q < 1.0e6 && uIsSphere == 1) {
             color = getSphereColor(origin + ray * q,  uSphereCenter, uSphereRadius);
-          }else {
-            color = vec3(1.0, 1.0, 0.0) * 0.6;
-          }
         } else if (ray.y < 0.0) {
           vec2 t = intersectCube(origin, ray, vec3(-1.0, -poolHeight, -1.0), vec3(1.0, poolHeight, 1.0));
           color = getWallColor(origin + ray * t.y);
@@ -564,20 +562,10 @@ varying vec3 initialPosition;
           float fresnel = mix(0.25, 1.0, pow(1.0 - dot(normal, -eyeDir), 3.0)); 
           vec3 refraColor = getRayColor(vVertexPosition, refractDir, underwaterColor);
           vec3 refleColor = getRayColor(vVertexPosition, reflectDir, underwaterColor);
-          if(uIsSphere == 0 && uDrawObjReflect ==1){
-            vec2 coord = vReflectPosition.xy;
-            coord.x = 1.0 -coord.x;
-           // coord.y = 1.0 -coord.y;
-            vec3 refl = texture2D(uSamplerReflect, coord).rgb;
-            vec3 refr = texture2D(uSamplerReflect, vReflectPosition.xy).rgb;
-            if(length(refl)>0.0 && vVertexPosition.y > 0.0){
-                refleColor += refl * 0.5;
-            }
-             if(length(refr)>0.0 && vVertexPosition.y < 0.0){
-                refraColor += refr * 0.5;
-            }
+          vec3 ref = texture2D(uSamplerReflect, vReflectPosition.xy).rgb;
+          if(length(ref)>0.0){
+              refleColor += ref;
           }
-          
           gl_FragColor = vec4(mix(refleColor, refraColor, fresnel), 1.0);
         }else if(uProgNum == 1){  //below water
           normal = -normal;
@@ -586,12 +574,6 @@ varying vec3 initialPosition;
           float fresnel = mix(0.5, 1.0, pow(1.0 - dot(normal, -eyeDir), 3.0)); 
           vec3 refraColor = getRayColor(vVertexPosition, refractDir, abovewaterColor);
           vec3 refleColor = getRayColor(vVertexPosition, reflectDir, abovewaterColor);
-          if(uIsSphere == 0 && uDrawObjReflect ==1){
-            vec3 refl = texture2D(uSamplerReflect, vReflectPosition.xy).rgb;
-            if(length(refl)>0.0){
-                refleColor += refl * 0.5;
-            }
-          }
           gl_FragColor = vec4(mix(refleColor, refraColor, (1.0 - fresnel) * length(refractDir)), 1.0); 
          
         }
@@ -1040,7 +1022,6 @@ varying vec3 initialPosition;
     
 <script id="postprocess-fs" type="x-shader/x-fragment">
     precision highp float;
-   // uniform mat4 uInverseMatrix; //inverse mvp matrix
     uniform sampler2D uSamplerGodray;
     uniform sampler2D uSamplerColor;
     varying vec2 vCoord;
@@ -1054,10 +1035,6 @@ varying vec3 initialPosition;
       //depth = vCoord.x;
       vec4 godrayColor = vec4(0.0);
       if((texture2D(uSamplerGodray, vCoord).r) > 0.0) godrayColor = vec4( vec3(-0.15*texture2D(uSamplerGodray, vCoord).r), 0.0);
-      // float x = gl_FragCoord.x * 2.0 / 1080.0 - 1.0;
-      // float y = -gl_FragCoord.y * 2.0 / 720.0 + 1.0;
-      // vec4 point2D = vec4(x,y,0.0,1.0);
-      // vec4 point3D = uInverseMatrix * point2D;
       gl_FragColor = vec4(texture2D(uSamplerColor, vCoord).xyz, 1.0) - godrayColor;
       //gl_FragColor = vec4(vec3(vCoord.x), 1.0)
        //pack(gl_FragCoord.z);
@@ -1066,48 +1043,45 @@ varying vec3 initialPosition;
     
 </head> 
 
-<audio autoplay>
-  <source src='/music/backgroundmusic.mp3' type='audio/mp3'>
-</audio>
-
 <body onload="webGLStart();">
 
-  <table>
+<table>
       <tr>
           <td>
-              <canvas id="the-canvas" width="1080" height="720" style="cursor:hand;"> WebGL unavailable. </canvas>
+              <canvas id="the-canvas" width="1080" height="720" style="cursor:hand;">  WebGL unavailable. </canvas>
 
           </td>
+
           <td align="left" valign="top" style="position:absolute;left:1080px;padding:20px;">
-            <h1><strong>Under The Sea</strong></h1> <br>
-            <br><strong>Interaction: </strong><br></h3>
-            <ul>
-                <li>Right Mouse Button - rotate</li>
-                <li>Left Mouse Button - interact </li>
-                <li>Middle Mouse Wheel - zoom </li>
-            </ul>
+              <h1><strong>WebGL Interactive Water</strong></h1> <br>
+              <a href = "http://www.bingludu.com" target = "_blank"><strong>Binglu's Website</strong></a>  <br>
+              <a href = "http://www.maxinjie.com/ " target = "_blank"><strong>Xinjie's Website</strong></a> <br>
+              <a href = "https://github.com/dblsai/WebGL-Fluid" target = "_blank"><strong>View Source</strong></a> <br>
+              <a href = "https://www.youtube.com/watch?v=Wq27HIlzpmQ&feature=youtu.be" target = "_blank"><strong>Video Demo</strong></a> <br>
+              <br><strong>Interaction: </strong><br></h3>
+              <ul>
+              <li>Right Mouse Button - rotate</li>
+              <li>Left Mouse Button - interact </li>
+              <li>Middle Mouse Wheel - zoom </li>
+   
+              </ul>
+              <br><strong>Features:</strong> <br>
+              <ul>
+              <li>Reflection </li>
+              <li>Refraction </li>
+              <li>Soft Shadow </li>
+              <li>Mouse Interaction </li>
+              <li>Sphere Interaction </li>
+              <li>Caustics </li>
+              </ul>
+        
+      
+          <div>fps: <span id="fps"></span></div>
           </td>
-          <td>
-            <table>
-              <tr>
-                <td><button class='btn' id='btn1'><image src="menu/fish1.PNG" width=120 height=120></image></button></td>
-                <td><button class='btn' id='btn2'><image src="menu/fish2.PNG" width=120 height=120></image></button></td>
-                <td><button class='btn' id='btn3'><image src="menu/fish3.PNG" width=120 height=120></image></button></td>
-                <td><button class='btn' id='btn4'><image src="menu/fish4.PNG" width=120 height=120></image></button></td>
-                <td><button class='btn' id='btn5'><image src="menu/fish5.PNG" width=120 height=120></image></button></td> 
-              </tr>
-            </table>
-            <center><button id="rain">ACID-RAIN</button></center>
-            <br>
-            <center><button id="ship">OIL-LEAK</button></center>
-            <br>
-            <center><button id="save">SAVE THE SEA</button></center>
+      </tr>
+</table>
 
-          </td>
-      </tr> 
-  
-  </table>
-  
+ 
 </body>
 
 </html>
