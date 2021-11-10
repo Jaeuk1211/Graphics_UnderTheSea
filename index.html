@@ -1,14 +1,49 @@
 <html>
   <style type="text/css">
+	table{
+	background-color: black;
+	}
     #title{
       text-align: center;
       width:500px;
       font-size: 40px;
       font-weight: bold;
       font-family: 'Palanquin Dark', sans-serif;
-      color:black;
+      color:white;
       
     }
+	  
+	ol>li{
+	 font-size:55px;
+	 color: white;
+	 margin-left: 20px;
+	 margin-top: 20px;
+	 margin-bottom: 20px;
+
+	}
+	ul>li{
+	 font-size:20px;
+	 color: #FF6600;
+	 list-style-type: square;
+	 margin-left: 70px;
+	 margin-top: 20px;
+	 margin-bottom: 20px;
+	 font-family: 'Palanquin Dark';
+
+	}
+	.text1{
+	font-size:80px;
+	margin-top: 20px;
+    color:white;
+    font-style:italic;
+    font-weight:bold
+	}
+	.text2{
+	font-size:30px;
+    color:#C0C0C0;
+    font-weight:bold
+	font-family: 'Palanquin Dark';
+	}
     </style>
 
 <head>
@@ -1076,18 +1111,18 @@ varying vec3 initialPosition;
       <tr>
           <td>
               <canvas id="the-canvas" width="1080" height="720" style="cursor:hand;"> WebGL unavailable. </canvas>
-
-          </td>
-          <td align="left" valign="top" style="position:absolute;left:1080px;padding:20px;">
-            <h1><strong>Under The Sea</strong></h1> <br>
-            <br><strong>Interaction: </strong><br></h3>
+		  </td>
+          <td align="left" valign="top" style="position:absolute;left:1080px;padding:40px;">
+		  
+			<h1><span class="text1" style="font-family:Palanquin Dark;">Under The Sea</span></h1> <br><br><br>
+            <p><span class="text2" style="font-family:Palanquin Dark;">Interaction:</span></p>
             <ul>
                 <li>Right Mouse Button - rotate</li>
                 <li>Left Mouse Button - interact </li>
                 <li>Middle Mouse Wheel - zoom </li>
             </ul>
           </td>
-          <td>
+          <td style=padding-top:250>
             <table>
               <tr>
                 <td><button class='btn' id='btn1'><image src="menu/fish1.PNG" width=120 height=120></image></button></td>
@@ -1097,9 +1132,10 @@ varying vec3 initialPosition;
                 <td><button class='btn' id='btn5'><image src="menu/fish5.PNG" width=120 height=120></image></button></td> 
               </tr>
             </table>
-            <center><button id="rain">ACID-RAIN</button></center>
+			<br>
+            <center><button id="rain">ACID - RAIN</button></center>
             <br>
-            <center><button id="ship">OIL-LEAK</button></center>
+            <center><button id="ship">OIL - LEAK</button></center>
             <br>
             <center><button id="save">SAVE THE SEA</button></center>
 
