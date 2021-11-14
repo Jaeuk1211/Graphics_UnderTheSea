@@ -178,7 +178,7 @@ section {
   display: none;
   border-top: 1px solid #ddd;}
 
-/*라디오버튼 숨김*/
+/* Hide radio button */
 input {
     display: none;}
 
@@ -195,7 +195,7 @@ label:hover {
   color: #ee5112;
   cursor: pointer;}
 
-/*input 클릭시, label 스타일*/
+/*when input is clicked , style of label*/
 input:checked + label {
     color: #555;
     border: 1px solid #ddd;
