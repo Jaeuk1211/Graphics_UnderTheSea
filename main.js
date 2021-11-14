@@ -44,7 +44,7 @@
     var renderbuffer1;
     var textureSize = 256;
     var textureSize1 = 512;
-    var textureSize2 = 1024; // 스카이 배경 사이즈
+    var textureSize2 = 1024; // Sky background size
 
     // matrices
     var mvMatrix = mat4.create();
@@ -72,7 +72,6 @@
     // animating 
     var accumTime = 0;
 
-    // 수정 (추가)
     var clickObject = 0;
 
     //mouse interaction
@@ -107,7 +106,7 @@
     var fishNumbers=[1, 2, 3, 4, 5, 16, 17, 20, 21, 22, 23, 24, 25, 26];
     var fishEachsize = [0.001, 0.001, 0.001, 0.001, 0.001, 0.5, 0.004, 0.4, 0.005, 0.008, 0.008, 0.008, 0.006, 0.005]; // 16
     
-    // 물고기
+    // Initial Objects 
     var fishCount = 4;
     var fishes=[16,20,21,1];
     var size = [0.01, 0.6, 0.5, 0.001]; // 16 17 20 21 26
@@ -141,10 +140,11 @@
                 184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254, 138, 236, 205, 93,
                 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180 ];
 
+    // Wind animation
     var grad = [  1,1,0,    -1,1,0,    1,-1,0,    -1,-1,0,
                   1,0,1,    -1,0,1,    1,0,-1,    -1,0,-1,
                   0,1,1,    0,-1,1,    0,1,-1,    0,-1,-1,
-                  1,1,0,    0,-1,1,    -1,1,0,    0,-1,-1 ]; // 시작 바람 효과
+                  1,1,0,    0,-1,1,    -1,1,0,    0,-1,-1 ]; 
 
     var permTexture;
     var gradTexture;
@@ -270,7 +270,7 @@
 
 
 
-    // 오브젝트 개수 설정하는 거인듯 ?
+    // set object attributes as mush as object count
     // -----------------------sphere[i]------------------------------
     for (var i = 0; i < fishCount; i++) {
         setObjectAttribute(i);
@@ -384,7 +384,7 @@
         normalProg.deltaUniform = gl.getUniformLocation(normalProg,"uDelta");
 
         //-----------------------simulation-----------------------------------------------
-        // 애니메이션 부드럽게
+        // Make the animation soft
         simulateProg = gl.createProgram();
         gl.attachShader(simulateProg, getShader(gl, "interact-vs") );
         gl.attachShader(simulateProg, getShader(gl, "interact-simulate-fs") );
@@ -474,7 +474,7 @@
         quadProg.modeUniform = gl.getUniformLocation(quadProg, "uMode");
         
         //----------------------god rays----------------------------------------------
-        // 틈새 빛살 == 햇빛
+        // The light of the gap == the sunlight
         godrayProg = gl.createProgram();
         gl.attachShader(godrayProg, getShader(gl, "godray-vs") );
         gl.attachShader(godrayProg, getShader(gl, "godray-fs") );
@@ -590,7 +590,7 @@
        // gl.bindTexture(gl.TEXTURE_2D, null);
     }
 
-    // 배경 관련입니다
+    // back ground texture
     function initSkyBoxTexture() {
         var ct = 0;
         var img = new Array(6);
@@ -681,18 +681,11 @@
     }
 
 
-// first object
+//Object initial setting
 function initObjs(i){
 
-    //objRaw = loadObj("objs/suzanne.obj");
-   //objRaw = loadObj("objs/prism.obj");
-    // objRaw = loadObj("objs/titanic10.obj", 0.010);
+    // load object file with size ( .obj )
     objRaw[i] = loadObj("objs/object0" + fishes[i] + ".obj",size[i]);
-    // objRaw = loadObj("objs/TropicalFish01.obj", 0.001);
-    // objRaw = loadObj("objs/ring.obj");
-    //objRaw = loadObj("objs/appleHighPoly.obj");
-    // objRaw = loadObj("objs/duck.obj");
-    //objRaw = loadObj("objs/duckHighPoly.obj");
 
     objRaw[i].addCallback(function () {
         objModel[nowObjectNumber] = new createModel(gl, objRaw[nowObjectNumber]);
@@ -741,10 +734,6 @@ function initObjs(i){
     registerAsyncObj(gl, objRaw[i]);
 
 }
-
-   
-
-
 
 function handleMouseDown(event) {
     if( event.button == 2 ) {
@@ -833,7 +822,7 @@ function startInteraction(x,y){
                 drawHeight(point[0], point[2]);
                 // if (mode == 0)
                 //     mode = 0;
-                mode = 0; // 마우스 
+                mode = 0; // mouse 
             }
         }
     }
@@ -857,7 +846,7 @@ function duringInterction(x,y){
         for (var i = 0; i < fishCount; i++) {
             if (mode == i + 1) {  // sphere[i] interaction, move sphere[i] around
                 var theEye = vec3.create(tracer.eye);
-                var preRay = vec3.create(preHit[i]); // 어레이로 변경했음.
+                var preRay = vec3.create(preHit[i]); // Change to array.
                 var nxtRay = vec3.create(ray);
     
                 vec3.subtract(preRay, theEye);   // preRay = preHit[i] - eye
@@ -924,7 +913,7 @@ function drawScene() {
 
         //initObjs();
     }else{
-        // 여기도 for문으로 바꿨음.
+        // Change to for loop.
         for (var i = 0; i < fishCount; i++) {
             sphere[i].radius = 0.23;
         }
@@ -977,8 +966,7 @@ function drawScene() {
     forwardVector = vec3.subtract(vec3.create([0, 0, 0]), cam);
     rightVector = vec3.cross(forwardVector, up);
     reflectProj = mat4.ortho(-2, 2, -2, 2, -4, 4);
-
-    // 지웠는데 왜 지웠는지 모름
+	
     // var center = vec3.create(sphere.center);
     // forwardVector = vec3.subtract(center, point); 
 
@@ -996,23 +984,24 @@ function drawScene() {
     
     gl.frontFace(gl.CCW);   // define front face
     gl.cullFace(gl.BACK);
-
+      
+    // Draw pool, back ground, water 
     drawPool(clickObject);
     drawSkyBox();
     drawWater();
     
+    // Draw objects as mush as fish count
     for (var i = 0; i < fishCount; i++) {
         drawObj(objModel[i], i);
     }
     
-    
     drawNormal();
     
     drawSimulation();
-    drawSimulation(); // 두개하면 빨라지는 느낌인거 같은데 ?
+    drawSimulation(); 
     
     for (var i = 0; i < fishCount; i++) {
-        drawInteraction(i); // 오브젝트가
+        drawInteraction(i); // Interaction of object
         sphere[i].oldcenter = vec3.create(sphere[i].center);
     }
     drawCaustic();
@@ -1021,7 +1010,8 @@ function drawScene() {
     if (parameters.Wind == true) {
         drawWind();
     }
-
+	
+    // Animation event of rain
     if (parameters.Rain == true) {
         if (rainCounter % 30 == 0) {
             var num = Math.random() * 15 + 5;  // [5, 20]
@@ -1157,7 +1147,6 @@ function drawPool(clickObject) {
     gl.disable(gl.CULL_FACE);
     gl.disableVertexAttribArray(poolProg.vertexPositionAttribute);
 
-    // 왜 지운지 모름
     // gl.disableVertexAttribArray(poolProg.textureCoordAttribute);
     gl.disableVertexAttribArray(poolProg.vertexNormalAttribute);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
@@ -1359,7 +1348,6 @@ function drawWater(){
         gl.disable(gl.CULL_FACE);
 }
 
-// 뭔지 모름
 function drawHeight(x,y, radius, strength){   //TextureA as input, TextureB as output
 
         x = x || 0;
@@ -1909,8 +1897,9 @@ function tick() {
 
 // setting object
 function setObject(i){
+	
     var objectCenter = [0.0, 1.0, 0.0];
-    // init object location
+    // init object location 
     if (i == 0) {
         objectCenter = [0.0, -0.051, 0.0];
     }
@@ -2142,8 +2131,8 @@ function webGLStart() {
         axid();
         leak();
     };
-    // 맨 처음에 그냥 있으니까 그게 fishcount가 0이라고 치는 듯.
-    // 그래서 새로 추가하는거는 1
+    // Initial object of fishCount == 0
+    // So, additional objects are start from fishCount == 1
 	document.getElementById( "btn1").onclick = function () {
 	    fishes[fishCount] = fishNumbers[0];
 	    size[fishCount] = fishEachsize[0];
@@ -2215,7 +2204,6 @@ function webGLStart() {
     }
     //console.log(OES_standard_derivatives);
 
-    
     for(var i=0; i<fishCount; i++)
     	setObject(i);
 
